@@ -1073,17 +1073,34 @@ async function init(){
   const hasBrain = localStorage.getItem('xayah_k');
 
   if(hasM365 && hasBrain){
-    $('s1').classList.remove('active');
-    $('s2').classList.remove('active');
-    $('s25').classList.add('active');
+    runIntro();
 
-    setTimeout(()=>{
-      goTo('s25','s3');
-    },2500);
+    const enterBtn = $('s1Enter');
+    if(enterBtn){
+      enterBtn.onclick = ()=>{
+        $('s1').classList.remove('active');
+        $('s25').classList.add('active');
+
+        setTimeout(()=>{
+          goTo('s25','s3');
+        },2500);
+      };
+    }
+
+    const skipBtn = $('s1Skip');
+    if(skipBtn){
+      skipBtn.onclick = ()=>{
+        $('s1').classList.remove('active');
+        $('s25').classList.add('active');
+
+        setTimeout(()=>{
+          goTo('s25','s3');
+        },2500);
+      };
+    }
   }else{
     runIntro();
   }
-}
 
 
 init();
