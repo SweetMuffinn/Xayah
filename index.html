@@ -1069,38 +1069,8 @@ async function init(){
     if(ok)setM365Connected();
   }
 
-  const hasM365 = localStorage.getItem('xayah_t') && Date.now() < parseInt(localStorage.getItem('xayah_exp')||'0');
-  const hasBrain = localStorage.getItem('xayah_k');
-
-  if(hasM365 && hasBrain){
-    runIntro();
-
-    const enterBtn = $('s1Enter');
-    if(enterBtn){
-      enterBtn.onclick = ()=>{
-        $('s1').classList.remove('active');
-        $('s25').classList.add('active');
-
-        setTimeout(()=>{
-          goTo('s25','s3');
-        },2500);
-      };
-    }
-
-    const skipBtn = $('s1Skip');
-    if(skipBtn){
-      skipBtn.onclick = ()=>{
-        $('s1').classList.remove('active');
-        $('s25').classList.add('active');
-
-        setTimeout(()=>{
-          goTo('s25','s3');
-        },2500);
-      };
-    }
-  }else{
-    runIntro();
-  }
+  runIntro();
+}
 
 
 init();
