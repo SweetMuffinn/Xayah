@@ -804,12 +804,9 @@ function setM365Connected(){
   $('m365Status').className='m365-status on';
   $('m365Status').textContent='● Microsoft 365 connected';
 
-  const btn=$('connectM365Btn');
+   const btn=$('connectM365Btn');
   if(btn){
-    btn.textContent='Microsoft 365 Connected';
-    btn.disabled=true;
-    btn.style.opacity='.75';
-    btn.style.cursor='default';
+    btn.style.display='none';
   }
 
   ['outlook','calendar','teams','sharepoint'].forEach(key=>{
