@@ -444,7 +444,7 @@ canvas#bgCanvas{position:fixed;inset:0;z-index:0;pointer-events:none}
       </div>
     </div>
 
-    <button class="ms-btn" onclick="connectM365()">
+    <button class="ms-btn" id="connectM365Btn" onclick="connectM365()">
       <svg viewBox="0 0 21 21"><rect x="1" y="1" width="9" height="9" fill="#f25022"/><rect x="11" y="1" width="9" height="9" fill="#7fba00"/><rect x="1" y="11" width="9" height="9" fill="#00a4ef"/><rect x="11" y="11" width="9" height="9" fill="#ffb900"/></svg>
       Connect Microsoft 365
     </button>
@@ -803,9 +803,21 @@ async function handleCB(){
 function setM365Connected(){
   $('m365Status').className='m365-status on';
   $('m365Status').textContent='● Microsoft 365 connected';
+
+  const btn=$('connectM365Btn');
+  if(btn){
+    btn.textContent='Microsoft 365 Connected';
+    btn.disabled=true;
+    btn.style.opacity='.75';
+    btn.style.cursor='default';
+  }
+
   ['outlook','calendar','teams','sharepoint'].forEach(key=>{
-    const seg=$('aw-'+key); if(seg) seg.classList.add('connected');
-    const st=$('aws-'+key); if(st){st.textContent='Live';}
+    const seg=$('aw-'+key);
+    if(seg) seg.classList.add('connected');
+
+    const st=$('aws-'+key);
+    if(st){st.textContent='Live';}
   });
 }
 
