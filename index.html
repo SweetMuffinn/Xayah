@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Xayah">
+<meta name="theme-color" content="#7c3aed">
+<title>Xayah — Ethos Command Center</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#06000f; --bg2:#0d0020; --bg3:#130030;
+  --border:rgba(120,60,220,0.18); --border2:rgba(140,80,255,0.35);
+  --purple:#7c3aed; --purple2:#9333ea; --purple3:#a855f7;
+  --text:#e8d8ff; --text2:#9d7fc4; --text3:#5a3d7a;
+  --accent:#c084fc; --urgent:#f0abfc;
+  --mono:'DM Mono',monospace; --display:'Syne',sans-serif;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);font-family:var(--display);color:var(--text)}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 50% at 50% -10%,rgba(124,58,237,0.15) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 80% 80%,rgba(147,51,234,0.08) 0%,transparent 60%);pointer-events:none;z-index:0}
+canvas#stars{position:fixed;inset:0;z-index:0;opacity:0.5}
+
+/* SETUP SCREEN */
+.setup-screen{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+.setup-box{background:rgba(13,0,32,0.95);border:1px solid var(--border2);border-radius:20px;padding:40px;max-width:480px;width:100%;text-align:center}
+.setup-orb{width:60px;height:60px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px;animation:orbpulse 2s infinite}
+.setup-title{font-size:26px;font-weight:700;color:var(--accent);margin-bottom:8px}
+.setup-sub{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:28px}
+.setup-label{font-size:11px;font-family:var(--mono);color:var(--text3);letter-spacing:.08em;text-transform:uppercase;text-align:left;margin-bottom:6px}
+.setup-input{width:100%;background:rgba(19,0,48,0.8);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;color:var(--text);font-size:13px;font-family:var(--mono);outline:none;transition:border-color .2s;margin-bottom:8px}
+.setup-input:focus{border-color:var(--purple3)}
+.setup-input::placeholder{color:var(--text3)}
+.setup-hint{font-size:11px;color:var(--text3);text-align:left;margin-bottom:20px;line-height:1.5}
+.setup-hint a{color:var(--purple3);text-decoration:none}
+.setup-btn{width:100%;background:var(--purple);border:none;border-radius:10px;padding:13px;color:#fff;font-size:14px;font-family:var(--display);font-weight:600;cursor:pointer;transition:background .2s;margin-bottom:10px}
+.setup-btn:hover{background:var(--purple2)}
+.setup-err{font-size:12px;color:var(--urgent);margin-top:8px;display:none}
+.setup-skip{font-size:12px;color:var(--text3);cursor:pointer;text-decoration:underline;display:block;margin-top:8px}
+.setup-skip:hover{color:var(--text2)}
+
+.shell{position:relative;z-index:1;display:grid;grid-template-rows:auto 1fr auto;height:100vh;height:100dvh;max-width:1200px;margin:0 auto;padding:12px 16px calc(12px + var(--safe-bottom)) 16px;padding-top:calc(12px + var(--safe-top));gap:12px}
+.header{display:flex;align-items:center;gap:12px;padding:12px 18px;background:rgba(13,0,32,0.85);border:1px solid var(--border2);border-radius:14px;backdrop-filter:blur(12px);flex-shrink:0}
+.orb-wrap{position:relative;flex-shrink:0}
+.orb{width:40px;height:40px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;transition:background .3s;user-select:none;-webkit-tap-highlight-color:transparent}
+.orb.active{background:var(--purple2);animation:orbpulse 1.5s infinite}
+@keyframes orbpulse{0%,100%{box-shadow:0 0 0 0 rgba(147,51,234,0.5)}50%{box-shadow:0 0 0 10px rgba(147,51,234,0)}}
+.orb-ring{position:absolute;inset:-5px;border-radius:50%;border:1px solid rgba(168,85,247,0.3);animation:spin 6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.brand{flex:1;min-width:0}
+.brand-name{font-size:20px;font-weight:700;color:var(--accent);letter-spacing:.04em}
+.brand-sub{font-size:10px;color:var(--text3);font-family:var(--mono);letter-spacing:.06em;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.voice-btn{display:flex;align-items:center;gap:7px;padding:7px 13px;border-radius:20px;border:1px solid var(--border2);background:rgba(124,58,237,0.12);color:var(--accent);font-size:12px;font-family:var(--display);cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent;white-space:nowrap}
+.voice-btn:hover{background:rgba(124,58,237,0.25);border-color:var(--purple3)}
+.voice-btn.listening{background:rgba(124,58,237,0.3);border-color:var(--purple3);animation:orbpulse 1.2s infinite}
+.voice-dot{width:6px;height:6px;border-radius:50%;background:var(--purple3);flex-shrink:0}
+.voice-btn.listening .voice-dot{background:var(--urgent);animation:blink .8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+.time-chip{font-family:var(--mono);font-size:11px;color:var(--text3);padding:5px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;white-space:nowrap}
+.key-indicator{font-family:var(--mono);font-size:10px;padding:5px 10px;border-radius:8px;border:1px solid var(--border);cursor:pointer;white-space:nowrap}
+.key-indicator.live{color:#86efac;border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.08)}
+.key-indicator.demo{color:var(--urgent);border-color:rgba(240,171,252,0.3);background:rgba(240,171,252,0.08)}
+.main{display:grid;grid-template-columns:200px 1fr;gap:12px;min-height:0}
+.sidebar{display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto}
+.sidebar::-webkit-scrollbar{width:0}
+.sidebar-section{background:rgba(13,0,32,0.8);border:1px solid var(--border);border-radius:12px;padding:13px;backdrop-filter:blur(8px);flex-shrink:0}
+.sidebar-label{font-size:10px;font-family:var(--mono);color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.qbtn{width:100%;display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--text2);font-size:13px;font-family:var(--display);cursor:pointer;transition:all .18s;text-align:left;margin-bottom:2px;-webkit-tap-highlight-color:transparent}
+.qbtn:hover,.qbtn:active{background:rgba(124,58,237,0.15);border-color:var(--border);color:var(--text)}
+.qbtn.active{background:rgba(124,58,237,0.2);border-color:var(--border2);color:var(--accent)}
+.qbtn .icon{font-size:15px;width:17px;text-align:center;opacity:.8;flex-shrink:0}
+.status-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stat-card{background:rgba(19,0,48,0.6);border:1px solid var(--border);border-radius:8px;padding:9px}
+.stat-num{font-size:20px;font-weight:700;color:var(--accent);font-family:var(--mono)}
+.stat-label{font-size:10px;color:var(--text3);margin-top:1px}
+.stat-card.alert .stat-num{color:var(--urgent)}
+.panel{background:rgba(13,0,32,0.8);border:1px solid var(--border);border-radius:12px;backdrop-filter:blur(8px);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.panel-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;flex-shrink:0}
+.panel-title{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.04em}
+.panel-ts{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text3)}
+.panel-body{flex:1;overflow-y:auto;padding:14px 16px}
+.panel-body::-webkit-scrollbar{width:3px}
+.panel-body::-webkit-scrollbar-track{background:transparent}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.section-head{font-size:10px;font-family:var(--mono);color:var(--purple3);letter-spacing:.1em;text-transform:uppercase;margin:14px 0 7px;display:flex;align-items:center;gap:6px}
+.section-head:first-child{margin-top:0}
+.section-head::after{content:'';flex:1;height:1px;background:var(--border)}
+.item{background:rgba(19,0,48,0.5);border:1px solid var(--border);border-left:2px solid var(--purple);border-radius:8px;padding:10px 13px;margin-bottom:6px;transition:border-color .2s}
+.item:hover{border-color:var(--border2);border-left-color:var(--purple3)}
+.item.urgent{border-left-color:var(--urgent)}
+.item-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.item-sub{font-size:12px;color:var(--text2);line-height:1.5}
+.item-meta{font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--mono)}
+.badge{font-size:10px;padding:2px 7px;border-radius:10px;font-family:var(--mono);font-weight:500;white-space:nowrap}
+.badge.urgent{background:rgba(240,171,252,0.12);color:var(--urgent);border:1px solid rgba(240,171,252,0.25)}
+.badge.new{background:rgba(124,58,237,0.15);color:var(--purple3);border:1px solid var(--border)}
+.badge.done{background:rgba(34,197,94,0.1);color:#86efac;border:1px solid rgba(34,197,94,0.2)}
+.xayah-callout{margin-top:14px;padding:13px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:8px;font-size:13px;line-height:1.7;color:var(--text)}
+.xayah-callout strong{color:var(--accent);font-weight:500}
+.idle-state{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3)}
+.idle-state .big-icon{font-size:38px;color:var(--border2)}
+.idle-state p{font-size:13px}
+.idle-state .hint{font-family:var(--mono);font-size:11px;opacity:.6;text-align:center;line-height:1.5}
+.thinking{display:flex;align-items:center;gap:8px;color:var(--text3);font-size:13px;padding:20px 0;justify-content:center}
+.dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--purple3);margin:0 2px;animation:dotbounce 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes dotbounce{0%,80%,100%{transform:scale(0.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+.ai-response{font-size:13.5px;line-height:1.8;color:var(--text)}
+.ai-response p{margin-bottom:10px}
+.ai-response strong{color:var(--accent);font-weight:500}
+.footer{background:rgba(13,0,32,0.8);border:1px solid var(--border);border-radius:12px;padding:10px 14px;backdrop-filter:blur(8px);display:flex;gap:9px;align-items:center;flex-shrink:0}
+.cmd-input{flex:1;background:rgba(19,0,48,0.6);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-size:13px;font-family:var(--display);outline:none;transition:border-color .2s;min-width:0}
+.cmd-input::placeholder{color:var(--text3)}
+.cmd-input:focus{border-color:var(--border2)}
+.cmd-send{background:var(--purple);border:none;border-radius:8px;padding:9px 18px;color:#fff;font-size:13px;font-family:var(--display);font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap}
+.cmd-send:hover{background:var(--purple2)}
+.sources{display:flex;gap:5px;flex-shrink:0}
+.src{font-size:10px;font-family:var(--mono);padding:4px 9px;border-radius:6px;border:1px solid var(--border);color:var(--text3);background:var(--bg2)}
+.src.on{border-color:rgba(168,85,247,0.4);color:var(--purple3)}
+@media(max-width:640px){
+  .shell{padding:8px 10px calc(8px + var(--safe-bottom)) 10px;padding-top:calc(8px + var(--safe-top));gap:8px}
+  .main{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .sidebar{flex-direction:row;overflow-x:auto;overflow-y:visible;min-height:unset}
+  .sidebar::-webkit-scrollbar{height:0}
+  .sidebar-section{flex-shrink:0}
+  .sidebar-section:first-child{display:flex;flex-direction:row;flex-wrap:nowrap;gap:0;min-width:max-content}
+  .sidebar-section:first-child .sidebar-label{display:none}
+  .sidebar-section:first-child .qbtn{flex-direction:column;gap:4px;padding:8px 10px;font-size:11px;width:auto;white-space:nowrap;margin-bottom:0}
+  .sidebar-section:first-child .qbtn .icon{width:auto;font-size:18px}
+  .status-grid{display:none}
+  .time-chip{display:none}
+  .sources{display:none}
+  .brand-sub{display:none}
+  .header{padding:10px 14px}
+  .brand-name{font-size:18px}
+}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+
+<!-- SETUP SCREEN -->
+<div class="setup-screen" id="setupScreen">
+  <div class="setup-box">
+    <div class="setup-orb">✦</div>
+    <div class="setup-title">Wake up, Xayah.</div>
+    <div class="setup-sub">Paste your Anthropic API key below to give Xayah her brain. This is stored only on your device — never sent anywhere except directly to Anthropic.</div>
+    <div class="setup-label">Your Anthropic API Key</div>
+    <input class="setup-input" id="apiKeyInput" type="password" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false"/>
+    <div class="setup-hint">Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> → API Keys. Starts with <strong style="color:var(--purple3)">sk-ant-</strong></div>
+    <button class="setup-btn" onclick="activateXayah()">Activate Xayah ✦</button>
+    <div class="setup-err" id="setupErr">That doesn't look like a valid API key. It should start with sk-ant-</div>
+    <span class="setup-skip" onclick="skipSetup()">Skip for now — use demo mode</span>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="shell" id="appShell" style="display:none">
+  <header class="header">
+    <div class="orb-wrap">
+      <div class="orb" id="orb" onclick="toggleVoice()">✦</div>
+      <div class="orb-ring"></div>
+    </div>
+    <div class="brand">
+      <div class="brand-name">XAYAH</div>
+      <div class="brand-sub" id="statusLine">ETHOS SOLUTIONS · COMMAND CENTER · ONLINE</div>
+    </div>
+    <div class="header-right">
+      <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+        <div class="voice-dot"></div>
+        <span id="voiceLabel">Say "Xayah"</span>
+      </button>
+      <div class="key-indicator" id="keyIndicator" onclick="resetKey()">● LIVE</div>
+      <div class="time-chip" id="clock">--:--</div>
+    </div>
+  </header>
+
+  <div class="main">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Quick actions</div>
+        <button class="qbtn" onclick="ask('briefing')" id="btn-briefing"><span class="icon">⚡</span>Full briefing</button>
+        <button class="qbtn" onclick="ask('emails')" id="btn-emails"><span class="icon">✉</span>Emails</button>
+        <button class="qbtn" onclick="ask('calendar')" id="btn-calendar"><span class="icon">◷</span>Calendar</button>
+        <button class="qbtn" onclick="ask('teams')" id="btn-teams"><span class="icon">◈</span>Teams</button>
+        <button class="qbtn" onclick="ask('sharepoint')" id="btn-sharepoint"><span class="icon">⬡</span>SharePoint</button>
+        <button class="qbtn" onclick="ask('ethos')" id="btn-ethos"><span class="icon">◉</span>Ethos update</button>
+        <button class="qbtn" onclick="ask('leads')" id="btn-leads"><span class="icon">◎</span>Field leads</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Today</div>
+        <div class="status-grid">
+          <div class="stat-card alert"><div class="stat-num" id="statUrgent">—</div><div class="stat-label">Urgent</div></div>
+          <div class="stat-card"><div class="stat-num" id="statMeetings">—</div><div class="stat-label">Meetings</div></div>
+          <div class="stat-card"><div class="stat-num" id="statEmails">—</div><div class="stat-label">Emails</div></div>
+          <div class="stat-card"><div class="stat-num" id="statTeams">—</div><div class="stat-label">Teams</div></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="panel">
+      <div class="panel-header">
+        <span style="color:var(--purple3);font-size:14px">✦</span>
+        <span class="panel-title" id="panelTitle">XAYAH READY</span>
+        <span class="panel-ts" id="panelTs"></span>
+      </div>
+      <div class="panel-body" id="panelBody">
+        <div class="idle-state">
+          <div class="big-icon">✦</div>
+          <p>Good to see you, Angel.</p>
+          <p class="hint">Pick an action on the left<br>or say "Xayah, give me a briefing"</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <input class="cmd-input" id="cmdInput" placeholder='Try: "Xayah, give me an Ethos update" or "any urgent emails?"' onkeydown="if(event.key==='Enter')sendCmd()"/>
+    <button class="cmd-send" onclick="sendCmd()">Ask ↗</button>
+    <div class="sources">
+      <div class="src on">Outlook</div>
+      <div class="src on">Teams</div>
+      <div class="src on">SharePoint</div>
+    </div>
+  </footer>
+</div>
+
+<script>
+/* STARS */
+const sc=document.getElementById('stars'),sx=sc.getContext('2d');
+function resizeStars(){sc.width=window.innerWidth;sc.height=window.innerHeight}
+resizeStars();window.addEventListener('resize',resizeStars);
+const stars=Array.from({length:150},()=>({x:Math.random()*sc.width,y:Math.random()*sc.height,r:Math.random()*1.2+.2,a:Math.random(),da:(.002+Math.random()*.003)*(Math.random()<.5?1:-1)}));
+function drawStars(){sx.clearRect(0,0,sc.width,sc.height);stars.forEach(s=>{s.a=Math.max(.05,Math.min(.9,s.a+s.da));if(s.a>=.9||s.a<=.05)s.da*=-1;sx.beginPath();sx.arc(s.x,s.y,s.r,0,Math.PI*2);sx.fillStyle=`rgba(200,170,255,${s.a})`;sx.fill()});requestAnimationFrame(drawStars)}
+drawStars();
+
+/* CLOCK */
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}
+tick();setInterval(tick,1000);
+
+/* API KEY MANAGEMENT */
+let API_KEY = localStorage.getItem('xayah_api_key') || '';
+let DEMO_MODE = false;
+
+function activateXayah(){
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if(!key.startsWith('sk-ant-')){
+    document.getElementById('setupErr').style.display='block';
+    return;
+  }
+  localStorage.setItem('xayah_api_key', key);
+  API_KEY = key;
+  DEMO_MODE = false;
+  launchApp(true);
+}
+
+function skipSetup(){
+  DEMO_MODE = true;
+  launchApp(false);
+}
+
+function launchApp(live){
+  document.getElementById('setupScreen').style.display='none';
+  document.getElementById('appShell').style.display='grid';
+  const ki = document.getElementById('keyIndicator');
+  if(live){ ki.textContent='● LIVE'; ki.className='key-indicator live'; }
+  else { ki.textContent='● DEMO'; ki.className='key-indicator demo'; }
+  setTimeout(()=>ask('briefing'), 800);
+}
+
+function resetKey(){
+  if(confirm('Reset your API key?')){
+    localStorage.removeItem('xayah_api_key');
+    API_KEY='';
+    document.getElementById('setupScreen').style.display='flex';
+    document.getElementById('appShell').style.display='none';
+    document.getElementById('apiKeyInput').value='';
+  }
+}
+
+/* Check if key already saved */
+if(API_KEY){ launchApp(true); }
+
+/* SYSTEM PROMPT */
+const SYSTEM = `You are Xayah, a sharp, confident AI command assistant for Angel at Ethos Distributed Solutions (Ethos Solutions), a field services / cell tower installation company headquartered in Golden, CO. Angel manages a team of field leads and handles operations and compliance.
+
+Your personality: friendly but direct and confident — like a smart war-room briefing officer who also genuinely cares. Lead with what matters. Use short punchy sentences. No fluff. Occasionally address Angel by name.
+
+Key context about Ethos:
+- Field leads handle AT&T cell tower installations across CO, NE, SD
+- They use Contractor Foreman for field reporting (currently rolling out)
+- Bill Taggart is the Controller
+- There is an ongoing multistate sales tax exemption setup across CO, NE, SD
+- AT&T/ANSCO RFD packets require RG114 tape drop forms
+
+When you have real M365 data, summarize it clearly using this HTML structure:
+<div class="section-head">[icon] [Label]</div>
+<div class="item urgent"><div class="item-title">[Title] <span class="badge urgent">Urgent</span></div><div class="item-sub">[Detail]</div><div class="item-meta">[Source · time]</div></div>
+<div class="item"><div class="item-title">[Title]</div><div class="item-sub">[Detail]</div><div class="item-meta">[Source · time]</div></div>
+<div class="xayah-callout"><strong>Xayah's call:</strong> [One sharp action recommendation]</div>
+
+When you don't have real data, still respond helpfully in the same HTML format using your Ethos context. Max 5 items per section. Always end with a Xayah's call.`;
+
+/* PROMPTS */
+const PROMPTS = {
+  briefing: "Give Angel a full morning briefing covering emails, calendar, Teams messages, and SharePoint activity. Flag anything urgent at Ethos.",
+  emails: "Summarize Angel's most important unread emails right now. Flag anything needing a reply.",
+  calendar: "What's on Angel's calendar today and this week? Flag anything coming up soon.",
+  teams: "Summarize the latest Teams messages Angel needs to know about.",
+  sharepoint: "What SharePoint files have been recently updated or need Angel's attention?",
+  ethos: "Give Angel a full Ethos Solutions company update — operations, field leads, compliance, anything pending.",
+  leads: "Give Angel a status update on the field leads team. Who's active, who needs follow-up?"
+};
+
+/* CALL XAYAH AI */
+async function callAI(prompt, context){
+  if(DEMO_MODE){ showDemoResponse(prompt); return; }
+  const content = context ? `${prompt}\n\nM365 DATA:\n${JSON.stringify(context,null,2)}` : prompt;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-sonnet-4-5',
+        max_tokens:1500,
+        system:SYSTEM,
+        messages:[{role:'user',content}]
+      })
+    });
+    if(!res.ok){
+      const err = await res.json();
+      throw new Error(err.error?.message || 'API error');
+    }
+    const data = await res.json();
+    const text = data.content?.find(b=>b.type==='text')?.text || 'No response.';
+    showResponse(text);
+  } catch(e){
+    showResponse(`<div class="xayah-callout"><strong>Xayah error:</strong> ${e.message}. Click ● LIVE in the header to check your API key.</div>`);
+  }
+}
+
+/* FETCH M365 DATA */
+async function fetchM365(types){
+  const data = {};
+  const now = new Date(), week = new Date(); week.setDate(week.getDate()+7);
+  const calls = [];
+  if(types.includes('emails')) calls.push(
+    fetch('https://graph.microsoft.com/v1.0/me/messages?$top=15&$orderby=receivedDateTime desc&$select=subject,from,receivedDateTime,isRead,bodyPreview',{headers:{Authorization:`Bearer ${await getM365Token()}`}})
+    .then(r=>r.json()).then(d=>data.emails=d.value).catch(()=>{})
+  );
+  if(types.includes('calendar')) calls.push(
+    fetch(`https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${now.toISOString()}&endDateTime=${week.toISOString()}&$select=subject,start,end,location,attendees`,{headers:{Authorization:`Bearer ${await getM365Token()}`}})
+    .then(r=>r.json()).then(d=>data.calendar=d.value).catch(()=>{})
+  );
+  await Promise.allSettled(calls);
+  return data;
+}
+
+async function getM365Token(){
+  // Token comes from the Microsoft 365 MCP connection already authenticated in Claude
+  // For standalone use, this would require OAuth setup
+  throw new Error('M365 direct auth not configured');
+}
+
+/* MAIN ASK FUNCTION */
+async function ask(key){
+  setActive(key);
+  setLoading(key);
+  const prompt = PROMPTS[key];
+  let context = null;
+
+  if(!DEMO_MODE && API_KEY){
+    try {
+      const types = {
+        briefing:['emails','calendar'],
+        emails:['emails'],
+        calendar:['calendar'],
+        teams:[],
+        sharepoint:[],
+        ethos:['emails','calendar'],
+        leads:['emails']
+      };
+      context = await fetchM365(types[key]||[]);
+    } catch(e){ /* proceed without M365 data */ }
+  }
+  await callAI(prompt, context);
+}
+
+/* DEMO RESPONSE */
+function showDemoResponse(prompt){
+  const responses = {
+    briefing:`<div class="section-head">⚡ Urgent</div><div class="item urgent"><div class="item-title">Sales tax exemption — still open <span class="badge urgent">Urgent</span></div><div class="item-sub">CO, NE, SD resale certs blocked pending contracting vs. resale clarification. Bill's waiting.</div><div class="item-meta">Demo data</div></div><div class="item urgent"><div class="item-title">Contractor Foreman — leads not yet onboarded <span class="badge urgent">Urgent</span></div><div class="item-sub">Check who still needs to log in before Friday deadline.</div><div class="item-meta">Demo data</div></div><div class="section-head">◷ Today</div><div class="item"><div class="item-title">Ops sync — this afternoon</div><div class="item-sub">Weekly field leads check-in. Come with site status updates.</div><div class="item-meta">Demo data</div></div><div class="xayah-callout"><strong>Xayah's call (DEMO):</strong> Add your API key to get real data from your actual inbox and calendar. Click ● DEMO in the header.</div>`,
+  };
+  showResponse(responses.briefing);
+}
+
+function setActive(id){document.querySelectorAll('.qbtn').forEach(b=>b.classList.remove('active'));const el=document.getElementById('btn-'+id);if(el)el.classList.add('active')}
+
+function setLoading(key){
+  const labels={briefing:'PULLING BRIEFING',emails:'CHECKING INBOX',calendar:'LOADING CALENDAR',teams:'READING TEAMS',sharepoint:'SCANNING SHAREPOINT',ethos:'ETHOS UPDATE',leads:'FIELD LEADS STATUS'};
+  document.getElementById('panelTitle').textContent=labels[key]||'THINKING';
+  document.getElementById('panelTs').textContent='';
+  document.getElementById('panelBody').innerHTML='<div class="thinking"><div class="dots"><span></span><span></span><span></span></div> Xayah is thinking...</div>';
+  document.getElementById('statusLine').textContent='XAYAH IS THINKING...';
+}
+
+function showResponse(html){
+  const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  document.getElementById('panelTs').textContent=now;
+  document.getElementById('panelBody').innerHTML=html;
+  document.getElementById('statusLine').textContent='ETHOS SOLUTIONS · COMMAND CENTER · ONLINE';
+}
+
+function sendCmd(){
+  const input=document.getElementById('cmdInput'),val=input.value.trim();
+  if(!val)return;
+  input.value='';
+  const l=val.toLowerCase();
+  if(l.includes('ethos')){ask('ethos');return}
+  if(l.includes('email')){ask('emails');return}
+  if(l.includes('calendar')||l.includes('meeting')||l.includes('schedule')){ask('calendar');return}
+  if(l.includes('team')||l.includes('message')||l.includes('chat')){ask('teams');return}
+  if(l.includes('sharepoint')||l.includes('file')||l.includes('document')){ask('sharepoint');return}
+  if(l.includes('lead')||l.includes('field')){ask('leads');return}
+  // Free-form AI question
+  setActive('');
+  document.getElementById('panelTitle').textContent='XAYAH';
+  document.getElementById('panelBody').innerHTML='<div class="thinking"><div class="dots"><span></span><span></span><span></span></div> Xayah is thinking...</div>';
+  callAI(val, null);
+}
+
+/* VOICE */
+let voiceActive=false,recognition=null;
+function toggleVoice(){
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){alert('Voice needs Chrome or Vivaldi.');return}
+  voiceActive?stopVoice():startVoice();
+}
+function startVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  recognition=new SR();recognition.continuous=true;recognition.interimResults=false;
+  recognition.onresult=e=>{
+    const t=e.results[e.results.length-1][0].transcript.trim().toLowerCase();
+    if(t.includes('xayah')){const cmd=t.replace(/xayah[,.]?\s*/i,'').trim();cmd?(document.getElementById('cmdInput').value='Xayah, '+cmd,sendCmd()):ask('briefing')}
+  };
+  recognition.onerror=()=>stopVoice();
+  recognition.onend=()=>{if(voiceActive)recognition.start()};
+  recognition.start();voiceActive=true;
+  document.getElementById('voiceBtn').classList.add('listening');
+  document.getElementById('voiceLabel').textContent='Listening...';
+  document.getElementById('orb').classList.add('active');
+  document.getElementById('statusLine').textContent='VOICE ACTIVE · SAY "XAYAH" TO COMMAND';
+}
+function stopVoice(){
+  if(recognition)recognition.stop();voiceActive=false;
+  document.getElementById('voiceBtn').classList.remove('listening');
+  document.getElementById('voiceLabel').textContent='Say "Xayah"';
+  document.getElementById('orb').classList.remove('active');
+  document.getElementById('statusLine').textContent='ETHOS SOLUTIONS · COMMAND CENTER · ONLINE';
+}
+
+/* PWA */
+let installPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;});
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script>
+</body>
+</html>
