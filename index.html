@@ -905,14 +905,19 @@ async function runSequenceLines(){
 }
 
 /* ── S3 COMMAND CENTER ── */
-  async function updateEmails(){
+async function updateEmails(){
   const token = localStorage.getItem('xayah_t');
 
-  if(!token) return;
+  if(!token){
+    $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">Microsoft 365 token missing</div></div>`;
+    return;
+  }
+
+  $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">Loading real Outlook emails...</div></div>`;
 
   try{
     const res = await fetch(
-      'https://graph.microsoft.com/v1.0/me/messages?$top=5&$select=subject,from,receivedDateTime',
+      'https://graph.microsoft.com/v1.0/me/messages?$top=5&$select=subject,from,receivedDateTime,bodyPreview&$orderby=receivedDateTime desc',
       {
         headers:{
           Authorization:`Bearer ${token}`
@@ -927,16 +932,22 @@ async function runSequenceLines(){
     const data = await res.json();
     const emails = data.value || [];
 
+    if(emails.length === 0){
+      $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">No recent emails found</div></div>`;
+      return;
+    }
+
     $('emailBody').innerHTML = emails.map(e=>`
       <div class="email-item">
         <div class="email-from">${e.from?.emailAddress?.address || 'Unknown Sender'}</div>
         <div class="email-subj">${e.subject || '(No Subject)'}</div>
-        <div class="email-prev">${new Date(e.receivedDateTime).toLocaleString()}</div>
+        <div class="email-prev">${e.bodyPreview || new Date(e.receivedDateTime).toLocaleString()}</div>
       </div>
     `).join('');
 
   }catch(err){
     console.error('Email load failed:',err);
+    $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">Email failed to load</div><div class="email-prev">${err.message}</div></div>`;
   }
 }
 function initS3(){
