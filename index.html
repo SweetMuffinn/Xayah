@@ -905,6 +905,53 @@ async function runSequenceLines(){
 }
 
 /* ── S3 COMMAND CENTER ── */
+  async function updateEmails(){
+  const token = localStorage.getItem('xayah_t');
+
+  if(!token){
+    if($('emailBody')) $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">Microsoft 365 token missing</div></div>`;
+    if($('emailPanelBody')) $('emailPanelBody').innerHTML = `<div class="icard"><div class="icard-title">Microsoft 365 token missing</div></div>`;
+    return;
+  }
+
+  try{
+    const res = await fetch(
+      'https://graph.microsoft.com/v1.0/me/messages?$top=20&$select=subject,from,receivedDateTime,bodyPreview,isRead&$orderby=receivedDateTime desc',
+      {headers:{Authorization:`Bearer ${token}`}}
+    );
+
+    if(!res.ok){
+      throw new Error(`Mail error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const emails = data.value || [];
+
+    const emailListHtml = emails.map(e=>`
+      <div class="email-item">
+        <div class="email-from">${e.from?.emailAddress?.address || 'Unknown Sender'}</div>
+        <div class="email-subj">${e.subject || '(No Subject)'}</div>
+        <div class="email-prev">${e.bodyPreview || new Date(e.receivedDateTime).toLocaleString()}</div>
+      </div>
+    `).join('');
+
+    const emailPanelHtml = emails.map(e=>`
+      <div class="icard">
+        <div class="icard-title">${e.subject || '(No Subject)'}</div>
+        <div class="icard-body">${e.bodyPreview || 'No preview available.'}</div>
+        <div class="icard-meta">${e.from?.emailAddress?.address || 'Unknown Sender'} · ${new Date(e.receivedDateTime).toLocaleString()}</div>
+      </div>
+    `).join('');
+
+    if($('emailBody')) $('emailBody').innerHTML = emailListHtml;
+    if($('emailPanelBody')) $('emailPanelBody').innerHTML = emailPanelHtml;
+
+  }catch(err){
+    console.error('Email load failed:',err);
+    if($('emailBody')) $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">Email failed to load</div><div class="email-prev">${err.message}</div></div>`;
+    if($('emailPanelBody')) $('emailPanelBody').innerHTML = `<div class="icard urgent"><div class="icard-title">Email failed to load</div><div class="icard-body">${err.message}</div></div>`;
+  }
+}
 async function updateBriefing(){
   const token = localStorage.getItem('xayah_t');
 
