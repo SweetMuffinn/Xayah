@@ -905,7 +905,11 @@ async function runSequenceLines(){
 }
 
 /* ── S3 COMMAND CENTER ── */
-function initS3(){startClock();setTimeout(()=>loadPanel('briefing'),600);}
+function initS3(){
+  startClock();
+  updateCalendar();
+  setTimeout(()=>loadPanel('briefing'),600);
+}
 
 function startClock(){
   function tick(){$('s3Clock').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});}
