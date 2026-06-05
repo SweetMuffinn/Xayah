@@ -929,21 +929,40 @@ async function updateEmails(){
       throw new Error(`Mail error ${res.status}`);
     }
 
-    const data = await res.json();
-    const emails = data.value || [];
+const data = await res.json();
+const emails = data.value || [];
 
-    if(emails.length === 0){
-      $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">No recent emails found</div></div>`;
-      return;
-    }
+if(emails.length === 0){
+  $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">No recent emails found</div></div>`;
 
-    $('emailBody').innerHTML = emails.map(e=>`
-      <div class="email-item">
-        <div class="email-from">${e.from?.emailAddress?.address || 'Unknown Sender'}</div>
-        <div class="email-subj">${e.subject || '(No Subject)'}</div>
-        <div class="email-prev">${e.bodyPreview || new Date(e.receivedDateTime).toLocaleString()}</div>
-      </div>
-    `).join('');
+  if($('emailPanelBody')){
+    $('emailPanelBody').innerHTML = `<div class="icard"><div class="icard-title">No recent emails found</div></div>`;
+  }
+
+  return;
+}
+
+const emailListHtml = emails.map(e=>`
+  <div class="email-item">
+    <div class="email-from">${e.from?.emailAddress?.address || 'Unknown Sender'}</div>
+    <div class="email-subj">${e.subject || '(No Subject)'}</div>
+    <div class="email-prev">${e.bodyPreview || new Date(e.receivedDateTime).toLocaleString()}</div>
+  </div>
+`).join('');
+
+const emailPanelHtml = emails.map(e=>`
+  <div class="icard">
+    <div class="icard-title">${e.subject || '(No Subject)'}</div>
+    <div class="icard-body">${e.bodyPreview || 'No preview available.'}</div>
+    <div class="icard-meta">${e.from?.emailAddress?.address || 'Unknown Sender'}</div>
+  </div>
+`).join('');
+
+$('emailBody').innerHTML = emailListHtml;
+
+if($('emailPanelBody')){
+  $('emailPanelBody').innerHTML = emailPanelHtml;
+}
 
   }catch(err){
     console.error('Email load failed:',err);
