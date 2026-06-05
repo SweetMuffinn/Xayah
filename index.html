@@ -985,13 +985,14 @@ async function updateBriefing(){
 function initS3(){
   startClock();
   updateCalendar();
-  updateEmails();
 
-  setInterval(updateEmails,60000);
+  if(typeof updateEmails === 'function'){
+    updateEmails();
+    setInterval(updateEmails,60000);
+  }
 
   setTimeout(()=>loadPanel('briefing'),600);
 }
-
 function startClock(){
   function tick(){$('s3Clock').textContent=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});}
   tick();setInterval(tick,1000);
