@@ -1067,42 +1067,7 @@ const PANELS={
   teams:{title:'Team Activity',badge:'Demo',html:`<div class="icard"><div class="icard-title">No live Teams data in demo mode</div><div class="icard-body">Connect Microsoft 365 to see your real Teams messages, @mentions, and channel activity here in real time.</div></div><div class="icard call"><div class="icard-title">Xayah's Call <span class="ibadge call">Strategic</span></div><div class="icard-body">Once connected, I'll monitor your field lead channels, AT&T project threads, and direct messages — surfacing anything that needs you before you have to look.</div></div>`},
   sharepoint:{title:'Project Memory',badge:'Demo',html:`<div class="icard"><div class="icard-title">No live SharePoint data in demo mode</div><div class="icard-body">Connect Microsoft 365 to see recently updated files, RFD packets, compliance folders, and project documents.</div></div><div class="icard call"><div class="icard-title">Xayah's Call <span class="ibadge call">Strategic</span></div><div class="icard-body">Key folders once live: RFD Packets, CO-NE-SD Cert Matrix, Contractor Foreman Onboarding Tracker, and Tower Reports.</div></div>`}
 };
-async function updateEmailPanel(){
-  const token = localStorage.getItem('xayah_t');
 
-  if(!token || !$('emailPanelBody')) return;
-
-  try{
-    const res = await fetch(
-      'https://graph.microsoft.com/v1.0/me/messages?$top=20&$select=subject,from,receivedDateTime,bodyPreview,isRead&$orderby=receivedDateTime desc',
-      {headers:{Authorization:`Bearer ${token}`}}
-    );
-
-    if(!res.ok){
-      throw new Error(`Mail error ${res.status}`);
-    }
-
-    const data = await res.json();
-    const emails = data.value || [];
-
-    if(emails.length === 0){
-      $('emailPanelBody').innerHTML = `<div class="icard"><div class="icard-title">No recent emails found</div></div>`;
-      return;
-    }
-
-    $('emailPanelBody').innerHTML = emails.map(e=>`
-      <div class="icard">
-        <div class="icard-title">${e.subject || '(No Subject)'}</div>
-        <div class="icard-body">${e.bodyPreview || 'No preview available.'}</div>
-        <div class="icard-meta">${e.from?.emailAddress?.address || 'Unknown Sender'} · ${new Date(e.receivedDateTime).toLocaleString()}</div>
-      </div>
-    `).join('');
-
-  }catch(err){
-    console.error('Email panel load failed:',err);
-    $('emailPanelBody').innerHTML = `<div class="icard urgent"><div class="icard-title">Email panel failed to load</div><div class="icard-body">${err.message}</div></div>`;
-  }
-}
 function loadPanel(key){
   const d=PANELS[key]||PANELS.briefing;
 
@@ -1110,10 +1075,9 @@ function loadPanel(key){
   $('cBadge').textContent=d.badge;
   $('cBody').innerHTML=d.html;
 
-if(key==='emails'){
-  if(typeof updateEmails === 'function') updateEmails();
-  updateEmailPanel();
-}
+  if(key==='emails'){
+    updateEmails();
+  }
 
   if(key==='briefing'){
     updateBriefing();
