@@ -1037,9 +1037,14 @@ const PANELS={
 
 function loadPanel(key){
   const d=PANELS[key]||PANELS.briefing;
+
   $('cTitle').textContent=d.title;
   $('cBadge').textContent=d.badge;
   $('cBody').innerHTML=d.html;
+
+  if(key==='emails'){
+    updateEmails();
+  }
 }
 
 /* ── CHAT ── */
