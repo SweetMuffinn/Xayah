@@ -905,18 +905,56 @@ function startClock(){
   setInterval(updateCalendar,60000);
 }
 
-function updateCalendar(){
-  // Highlight next upcoming event
-  const now=new Date();
-  const events=[
-    {time:'1:30 PM',h:13,m:30,title:'CX — ANSCO Updates',sub:'Teams · S. Baird'},
-    {time:'2:00 PM',h:14,m:0,title:'Ethos Financial Clean Up',sub:'Teams · Amentum'},
-    {time:'5:00 PM',h:17,m:0,title:'Ismael Safety Audit',sub:'Teams · S. Romero'}
-  ];
-  const upcoming=events.filter(e=>{const t=new Date();t.setHours(e.h,e.m,0);return t>now;}).slice(0,3);
-  if(upcoming.length>0){
-    $('calBody').innerHTML=upcoming.map((e,i)=>`<div class="cal-item${i===0?' next':''}"><div class="cal-time">${e.time}</div><div><div class="cal-title">${e.title}</div><div class="cal-sub">${e.sub}</div></div></div>`).join('');
-    $('calBadge').textContent=`Next ${upcoming.length}`;
+async function updateCalendar(){
+  const token = localStorage.getItem('xayah_t');
+
+  if(!token){
+    $('calBody').innerHTML = `<div class="cal-item"><div class="cal-title">Microsoft 365 not connected</div><div class="cal-sub">Connect Microsoft 365 to load your real calendar.</div></div>`;
+    $('calBadge').textContent = 'Offline';
+    return;
+  }
+
+  try{
+    const start = new Date();
+    const end = new Date();
+    end.setDate(start.getDate() + 7);
+
+    const url = `https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${encodeURIComponent(start.toISOString())}&endDateTime=${encodeURIComponent(end.toISOString())}&$top=5&$orderby=start/dateTime`;
+
+    const res = await fetch(url,{
+      headers:{
+        Authorization:`Bearer ${token}`,
+        Prefer:'outlook.timezone="America/Denver"'
+      }
+    });
+
+    if(!res.ok){
+      throw new Error(`Microsoft Graph error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const events = data.value || [];
+
+    if(events.length === 0){
+      $('calBody').innerHTML = `<div class="cal-item"><div class="cal-title">No upcoming meetings</div><div class="cal-sub">Your calendar is clear for the next 7 days.</div></div>`;
+      $('calBadge').textContent = 'Clear';
+      return;
+    }
+
+    $('calBody').innerHTML = events.map((e,i)=>{
+      const dt = new Date(e.start.dateTime);
+      const time = dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+      const title = e.subject || 'Untitled event';
+      const location = e.location?.displayName || (e.isOnlineMeeting ? 'Online meeting' : 'Calendar');
+
+      return `<div class="cal-item${i===0?' next':''}"><div class="cal-time">${time}</div><div><div class="cal-title">${title}</div><div class="cal-sub">${location}</div></div></div>`;
+    }).join('');
+
+    $('calBadge').textContent = `Next ${events.length}`;
+  }catch(err){
+    console.error('Calendar load failed:',err);
+    $('calBody').innerHTML = `<div class="cal-item"><div class="cal-title">Calendar failed to load</div><div class="cal-sub">${err.message}</div></div>`;
+    $('calBadge').textContent = 'Error';
   }
 }
 
