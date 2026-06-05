@@ -917,7 +917,7 @@ async function updateEmails(){
 
   try{
     const res = await fetch(
-      'https://graph.microsoft.com/v1.0/me/messages?$top=5&$select=subject,from,receivedDateTime,bodyPreview&$orderby=receivedDateTime desc',
+      'https://graph.microsoft.com/v1.0/me/messages?$top=20&$select=subject,from,receivedDateTime,bodyPreview,isRead&$orderby=receivedDateTime desc',
       {
         headers:{
           Authorization:`Bearer ${token}`
