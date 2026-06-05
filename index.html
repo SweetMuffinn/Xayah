@@ -930,7 +930,7 @@ async function updateCalendar(){
   try{
     const start = new Date();
     const end = new Date();
-    end.setDate(start.getDate() + 7);
+    end.setHours(23,59,59,999);
 
     const url = `https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${encodeURIComponent(start.toISOString())}&endDateTime=${encodeURIComponent(end.toISOString())}&$top=5&$orderby=start/dateTime`;
 
