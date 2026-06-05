@@ -905,68 +905,81 @@ async function runSequenceLines(){
 }
 
 /* ── S3 COMMAND CENTER ── */
-async function updateEmails(){
+async function updateBriefing(){
   const token = localStorage.getItem('xayah_t');
 
-  if(!token){
-    $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">Microsoft 365 token missing</div></div>`;
-    return;
-  }
-
-  $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">Loading real Outlook emails...</div></div>`;
+  if(!token || !$('briefingBody')) return;
 
   try{
-    const res = await fetch(
-      'https://graph.microsoft.com/v1.0/me/messages?$top=20&$select=subject,from,receivedDateTime,bodyPreview,isRead&$orderby=receivedDateTime desc',
+    const unreadRes = await fetch(
+      'https://graph.microsoft.com/v1.0/me/messages?$filter=isRead eq false&$top=50&$select=id',
+      {headers:{Authorization:`Bearer ${token}`}}
+    );
+
+    const mailRes = await fetch(
+      'https://graph.microsoft.com/v1.0/me/messages?$top=5&$select=subject,from,receivedDateTime,bodyPreview,isRead&$orderby=receivedDateTime desc',
+      {headers:{Authorization:`Bearer ${token}`}}
+    );
+
+    const start = new Date();
+    const end = new Date();
+    end.setHours(23,59,59,999);
+
+    const calRes = await fetch(
+      `https://graph.microsoft.com/v1.0/me/calendarView?startDateTime=${encodeURIComponent(start.toISOString())}&endDateTime=${encodeURIComponent(end.toISOString())}&$top=5&$orderby=start/dateTime`,
       {
         headers:{
-          Authorization:`Bearer ${token}`
+          Authorization:`Bearer ${token}`,
+          Prefer:'outlook.timezone="America/Denver"'
         }
       }
     );
 
-    if(!res.ok){
-      throw new Error(`Mail error ${res.status}`);
+    if(!unreadRes.ok || !mailRes.ok || !calRes.ok){
+      throw new Error('One or more live briefing sources failed.');
     }
 
-const data = await res.json();
-const emails = data.value || [];
+    const unreadData = await unreadRes.json();
+    const mailData = await mailRes.json();
+    const calData = await calRes.json();
 
-if(emails.length === 0){
-  $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">No recent emails found</div></div>`;
+    const unreadCount = unreadData.value?.length || 0;
+    const emails = mailData.value || [];
+    const events = (calData.value || [])
+      .filter(e=>{
+        const dt = new Date(e.start.dateTime);
+        const title = (e.subject || '').toLowerCase();
+        if(dt < new Date()) return false;
+        if(title.startsWith('canceled:')) return false;
+        return true;
+      })
+      .sort((a,b)=>new Date(a.start.dateTime)-new Date(b.start.dateTime));
 
-  if($('emailPanelBody')){
-    $('emailPanelBody').innerHTML = `<div class="icard"><div class="icard-title">No recent emails found</div></div>`;
-  }
+    const nextEvent = events[0];
+    const nextEventHtml = nextEvent
+      ? `<div class="icard urgent"><div class="icard-title">Next meeting: ${nextEvent.subject || 'Untitled event'}</div><div class="icard-body">Starts at ${new Date(nextEvent.start.dateTime).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true})}.</div><div class="icard-meta">Calendar · today</div></div>`
+      : `<div class="icard"><div class="icard-title">No more meetings today</div><div class="icard-body">Your calendar is clear for the rest of today.</div><div class="icard-meta">Calendar · today</div></div>`;
 
-  return;
-}
+    const unreadHtml = `<div class="icard ${unreadCount>0?'urgent':''}"><div class="icard-title">${unreadCount} unread emails</div><div class="icard-body">Xayah is watching your recent Outlook activity and surfacing the newest signals below.</div><div class="icard-meta">Outlook · live</div></div>`;
 
-const emailListHtml = emails.map(e=>`
-  <div class="email-item">
-    <div class="email-from">${e.from?.emailAddress?.address || 'Unknown Sender'}</div>
-    <div class="email-subj">${e.subject || '(No Subject)'}</div>
-    <div class="email-prev">${e.bodyPreview || new Date(e.receivedDateTime).toLocaleString()}</div>
-  </div>
-`).join('');
+    const emailHtml = emails.slice(0,3).map(e=>`
+      <div class="icard">
+        <div class="icard-title">${e.subject || '(No Subject)'}</div>
+        <div class="icard-body">${e.bodyPreview || 'No preview available.'}</div>
+        <div class="icard-meta">${e.from?.emailAddress?.address || 'Unknown Sender'}</div>
+      </div>
+    `).join('');
 
-const emailPanelHtml = emails.map(e=>`
-  <div class="icard">
-    <div class="icard-title">${e.subject || '(No Subject)'}</div>
-    <div class="icard-body">${e.bodyPreview || 'No preview available.'}</div>
-    <div class="icard-meta">${e.from?.emailAddress?.address || 'Unknown Sender'}</div>
-  </div>
-`).join('');
-
-$('emailBody').innerHTML = emailListHtml;
-
-if($('emailPanelBody')){
-  $('emailPanelBody').innerHTML = emailPanelHtml;
-}
-
+    $('briefingBody').innerHTML = `
+      <div class="briefing-lead"><em>Angel,</em> I reviewed your live Microsoft 365 signals. Here is what deserves attention right now.</div>
+      ${nextEventHtml}
+      ${unreadHtml}
+      ${emailHtml}
+      <div class="icard call"><div class="icard-title">Xayah's Call <span class="ibadge call">Strategic</span></div><div class="icard-body">Start with the newest unread communications, then use the calendar block to protect your next meeting window.</div></div>
+    `;
   }catch(err){
-    console.error('Email load failed:',err);
-    $('emailBody').innerHTML = `<div class="email-item"><div class="email-subj">Email failed to load</div><div class="email-prev">${err.message}</div></div>`;
+    console.error('Briefing load failed:',err);
+    $('briefingBody').innerHTML = `<div class="icard urgent"><div class="icard-title">Briefing failed to load</div><div class="icard-body">${err.message}</div></div>`;
   }
 }
 function initS3(){
@@ -1045,7 +1058,7 @@ function setNav(el,key){
 }
 
 const PANELS={
-  briefing:{title:"Xayah's Briefing",badge:'Now',html:`<div class="briefing-lead"><em>Angel,</em> I've reviewed your active work world. Three items need your attention today.</div><div class="icard urgent"><div class="icard-title">Contractor Foreman deadline — Friday <span class="ibadge urgent">Urgent</span></div><div class="icard-body">9 of 12 field leads onboarded. Marcus and Priya still pending. Dillon came online this morning — one less to chase.</div><div class="icard-meta">CF Admin · this morning</div></div><div class="icard"><div class="icard-title">Samsung POs require review <span class="ibadge watch">Watch</span></div><div class="icard-body">Two new purchase orders from Samsung/ANSCO. Both have attachments. Mathew Looney requesting lift docs from Duffy Crane for V1100 CO FM West.</div><div class="icard-meta">Outlook · 1h ago</div></div><div class="icard"><div class="icard-title">5 field certifications expiring in 60–90 days</div><div class="icard-body">Armando Morales, Juan Mendez, Rafael Perez, Iram Garcia, and Luis Suarez. All came in tonight simultaneously.</div><div class="icard-meta">collaborate.center · tonight</div></div><div class="icard call"><div class="icard-title">Xayah's Call <span class="ibadge call">Strategic</span></div><div class="icard-body">Start with the cert renewals — five at once is unusual and likely time-sensitive. Then clear the Samsung POs before the day's meetings.</div></div>`},
+  briefing:{title:"Xayah's Briefing",badge:'Live',html:`<div id="briefingBody"><div class="briefing-lead"><em>Angel,</em> I am reviewing your live Outlook and calendar signals.</div><div class="icard"><div class="icard-title">Loading live briefing...</div><div class="icard-body">Xayah is gathering today’s meetings and recent communications.</div></div></div>`},
   emails:{title:'Communication Signals',badge:'Live',html:`<div id="emailPanelBody"><div class="icard"><div class="icard-title">Loading Outlook signals...</div><div class="icard-body">Xayah is pulling your latest email activity.</div></div></div>`},
   calendar:{title:'Calendar Foresight',badge:'Today',html:`<div class="icard urgent"><div class="icard-title">1:30 PM — CX ANSCO Updates <span class="ibadge urgent">Soon</span></div><div class="icard-body">Weekly sync with Allen Nelson, Regan LeBaron, John Rutkowitz from ANSCO. S. Baird organizing. Status: tentative.</div><div class="icard-meta">Teams</div></div><div class="icard"><div class="icard-title">2:00 PM — Ethos Financial Clean Up</div><div class="icard-body">Amentum meeting: Brian Siessel, Ethan Reed, Dena Sandberg. Confirmed.</div><div class="icard-meta">Teams · Amentum</div></div><div class="icard"><div class="icard-title">2:00 PM — Run Clock-Ins Daily Report Tracker</div><div class="icard-body">Your personal reminder. Conflicts with Financial Clean Up call.</div><div class="icard-meta">Reminder</div></div><div class="icard"><div class="icard-title">5:00 PM — Ismael Safety Audit</div><div class="icard-body">With S. Romero, M. Reece, J. Lounsbery, J. Solis, C. Mueller.</div><div class="icard-meta">Teams · tentative</div></div><div class="icard call"><div class="icard-title">Xayah's Call <span class="ibadge call">Strategic</span></div><div class="icard-body">The 2 PM conflict needs a decision. Financial Clean Up is external — prioritize it. Move your clock-in reminder or delegate it.</div></div>`},
   ethos:{title:'Ethos Update',badge:'Now',html:`<div class="briefing-lead">Three open threads at <em>Ethos</em> worth knowing right now.</div><div class="icard urgent"><div class="icard-title">CF Rollout — Friday deadline <span class="ibadge urgent">83%</span></div><div class="icard-body">9 of 12 leads onboarded. Marcus and Priya still pending. Two messages closes this out.</div></div><div class="icard urgent"><div class="icard-title">Sales tax exemption — still blocked <span class="ibadge urgent">Compliance</span></div><div class="icard-body">CO, NE, SD resale cert setup stalled on contracting vs. resale question. Tax pro clarification needed before any certs go to suppliers.</div></div><div class="icard"><div class="icard-title">AT&T / Samsung pipeline — active</div><div class="icard-body">CO-441 Pueblo is the newest RFD. V1100 CO FM West has crane approval pending. Pathwave assignments outstanding for two sites.</div></div><div class="icard call"><div class="icard-title">Xayah's Call <span class="ibadge call">Strategic</span></div><div class="icard-body">Tax cert situation is blocking supplier relationships across three states. Highest-leverage unresolved item at Ethos right now.</div></div>`},
@@ -1063,6 +1076,10 @@ function loadPanel(key){
 
   if(key==='emails'){
     updateEmails();
+  }
+
+  if(key==='briefing'){
+    updateBriefing();
   }
 }
 
