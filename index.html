@@ -1049,6 +1049,10 @@ async function refreshTok(){
 
 /* ── INIT ── */
 async function init(){
+  if(API_KEY && $('apiKey')){
+    $('apiKey').value = API_KEY;
+  }
+
   if(window.location.search.includes('code=')){
     await handleCB();
     $('s1').classList.remove('active');
