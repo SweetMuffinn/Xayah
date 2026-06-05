@@ -1059,10 +1059,30 @@ async function init(){
     $('s2').classList.add('active');
     return;
   }
+
   const exp=parseInt(localStorage.getItem('xayah_exp')||'0');
-  if(m365Token&&Date.now()<exp) setM365Connected();
-  else if(localStorage.getItem('xayah_rt')){const ok=await refreshTok();if(ok)setM365Connected();}
-  runIntro();
+
+  if(m365Token&&Date.now()<exp){
+    setM365Connected();
+  }else if(localStorage.getItem('xayah_rt')){
+    const ok=await refreshTok();
+    if(ok)setM365Connected();
+  }
+
+  const hasM365 = localStorage.getItem('xayah_t') && Date.now() < parseInt(localStorage.getItem('xayah_exp')||'0');
+  const hasBrain = localStorage.getItem('xayah_k');
+
+  if(hasM365 && hasBrain){
+    $('s1').classList.remove('active');
+    $('s2').classList.remove('active');
+    $('s25').classList.add('active');
+
+    setTimeout(()=>{
+      goTo('s25','s3');
+    },2500);
+  }else{
+    runIntro();
+  }
 }
 
 
