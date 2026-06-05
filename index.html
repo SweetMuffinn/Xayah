@@ -905,9 +905,44 @@ async function runSequenceLines(){
 }
 
 /* ── S3 COMMAND CENTER ── */
+  async function updateEmails(){
+  const token = localStorage.getItem('xayah_t');
+
+  if(!token) return;
+
+  try{
+    const res = await fetch(
+      'https://graph.microsoft.com/v1.0/me/messages?$top=5&$select=subject,from,receivedDateTime',
+      {
+        headers:{
+          Authorization:`Bearer ${token}`
+        }
+      }
+    );
+
+    if(!res.ok){
+      throw new Error(`Mail error ${res.status}`);
+    }
+
+    const data = await res.json();
+    const emails = data.value || [];
+
+    $('emailBody').innerHTML = emails.map(e=>`
+      <div class="email-item">
+        <div class="email-from">${e.from?.emailAddress?.address || 'Unknown Sender'}</div>
+        <div class="email-subj">${e.subject || '(No Subject)'}</div>
+        <div class="email-prev">${new Date(e.receivedDateTime).toLocaleString()}</div>
+      </div>
+    `).join('');
+
+  }catch(err){
+    console.error('Email load failed:',err);
+  }
+}
 function initS3(){
   startClock();
   updateCalendar();
+  updateEmails();
   setTimeout(()=>loadPanel('briefing'),600);
 }
 
