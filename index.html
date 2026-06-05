@@ -946,7 +946,7 @@ async function updateCalendar(){
     }
 
     const data = await res.json();
-    const events = data.value || [];
+    const events = (data.value || [])   .filter(e=>{     const dt = new Date(e.start.dateTime);     const title = (e.subject || '').toLowerCase();      if(dt < new Date()) return false;     if(title.startsWith('canceled:')) return false;      return true;   })   .sort((a,b)=>new Date(a.start.dateTime)-new Date(b.start.dateTime))   .slice(0,5);
 
     if(events.length === 0){
       $('calBody').innerHTML = `<div class="cal-item"><div class="cal-title">No upcoming meetings</div><div class="cal-sub">Your calendar is clear for the next 7 days.</div></div>`;
